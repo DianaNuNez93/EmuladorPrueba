@@ -1,0 +1,186 @@
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+*{
+    box-sizing:border-box;
+    image-rendering:pixelated;
+}
+
+body{
+    margin:0;
+    background:#050505;
+    color:#e5e5e5;
+    font-family:'Press Start 2P', monospace;
+}
+
+/* ===== SCANLINES CRT ===== */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(255,255,255,0.02),
+            rgba(255,255,255,0.02) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+    pointer-events:none;
+    z-index:999;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+    width:240px;
+    background:#080808;
+    padding:16px;
+    border-right:4px solid #300;
+    float:left;
+    min-height:100vh;
+}
+
+.sidebar.min{
+    width:80px;
+}
+
+.sidebar a{
+    color:#aaa;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:14px 0;
+    padding:6px;
+}
+
+.sidebar a:hover{
+    background:#150000;
+    color:#fff;
+}
+
+.sidebar.min span.text{
+    display:none;
+}
+
+span.short{
+    display:none;
+}
+
+.sidebar.min span.short{
+    display:inline;
+}
+
+/* ===== ICONOS ===== */
+.icon{
+    width:28px;
+    height:28px;
+    stroke:#b00000;
+    fill:none;
+    stroke-width:2.5;
+}
+
+/* ===== MAIN ===== */
+.main{
+    margin-left:240px;
+    padding:20px;
+    background:#070707;
+    min-height:100vh;
+}
+
+.sidebar.min + .main{
+    margin-left:80px;
+}
+
+/* ===== GRID ===== */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:18px;
+}
+
+/* ===== GAME CARD ===== */
+.game{
+    background:#0e0e0e;
+    padding:10px;
+    text-align:center;
+    position:relative;
+    color:#fff;
+    text-decoration:none;
+    border:3px solid #200;
+    box-shadow:4px 4px 0 #300;
+    transition:.1s;
+}
+
+.game:hover{
+    transform:translate(2px,2px);
+    box-shadow:2px 2px 0 #300;
+    background:#160000;
+}
+
+.game img{
+    width:100%;
+    height:140px;
+    object-fit:contain;
+    background:#000;
+    border:2px solid #400;
+}
+
+/* ===== FAVORITOS ===== */
+.star{
+    position:absolute;
+    top:6px;
+    right:6px;
+    font-size:18px;
+    color:#555;
+    cursor:pointer;
+}
+
+.star.active{
+    color:#ffd700;
+    text-shadow:0 0 6px #ff0;
+}
+
+/* ===== MODAL ===== */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    display:none;
+    align-items:center;
+    justify-content:center;
+}
+
+.modal-box{
+    background:#0b0b0b;
+    padding:20px;
+    border:4px solid #400;
+    width:300px;
+}
+
+.modal input{
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    background:#000;
+    color:#fff;
+    border:2px solid #400;
+    font-family:'Press Start 2P';
+}
+
+/* ===== SANGRE PIXEL ===== */
+.blood{
+    position:fixed;
+    bottom:10px;
+    left:20px;
+    width:140px;
+    height:60px;
+    background:
+        radial-gradient(circle at 20% 50%, #700 30%, transparent 31%),
+        radial-gradient(circle at 40% 40%, #900 35%, transparent 36%),
+        radial-gradient(circle at 65% 55%, #600 30%, transparent 31%),
+        radial-gradient(circle at 85% 45%, #800 35%, transparent 36%);
+    pointer-events:none;
+    opacity:.9;
+}
+</style>
