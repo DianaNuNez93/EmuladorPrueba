@@ -1,186 +1,176 @@
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<?php
+// ⚠️ AQUÍ VA TU LÓGICA PHP REAL
+// sesiones, lectura de juegos, sistemas, etc.
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pixel Spooky Arcade</title>
 
-<style>
-*{
-    box-sizing:border-box;
-    image-rendering:pixelated;
-}
+    <!-- Fuente pixel -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-body{
-    margin:0;
-    background:#050505;
-    color:#e5e5e5;
-    font-family:'Press Start 2P', monospace;
-}
+    <style>
+    *{
+        box-sizing:border-box;
+        image-rendering:pixelated;
+    }
 
-/* ===== SCANLINES CRT ===== */
-body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    background:
-        repeating-linear-gradient(
-            0deg,
-            rgba(255,255,255,0.02),
-            rgba(255,255,255,0.02) 1px,
-            transparent 1px,
-            transparent 3px
-        );
-    pointer-events:none;
-    z-index:999;
-}
+    body{
+        margin:0;
+        background:#050505;
+        color:#ffffff;
+        font-family:'Press Start 2P', monospace;
+    }
 
-/* ===== SIDEBAR ===== */
-.sidebar{
-    width:240px;
-    background:#080808;
-    padding:16px;
-    border-right:4px solid #300;
-    float:left;
-    min-height:100vh;
-}
+    /* ===== SIDEBAR ===== */
+    .sidebar{
+        position:fixed;
+        left:0;
+        top:0;
+        width:220px;
+        height:100vh;
+        background:#080808;
+        border-right:4px solid #300;
+        padding:16px;
+    }
 
-.sidebar.min{
-    width:80px;
-}
+    .sidebar h2{
+        font-size:12px;
+        color:#b00000;
+        margin-bottom:20px;
+    }
 
-.sidebar a{
-    color:#aaa;
-    text-decoration:none;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin:14px 0;
-    padding:6px;
-}
+    .sidebar a{
+        display:block;
+        color:#aaa;
+        text-decoration:none;
+        margin:10px 0;
+        padding:6px;
+    }
 
-.sidebar a:hover{
-    background:#150000;
-    color:#fff;
-}
+    .sidebar a:hover{
+        background:#150000;
+        color:#fff;
+    }
 
-.sidebar.min span.text{
-    display:none;
-}
+    /* ===== MAIN ===== */
+    .main{
+        margin-left:220px;
+        padding:20px;
+        min-height:100vh;
+        background:#0b0b0b;
+    }
 
-span.short{
-    display:none;
-}
+    h1{
+        color:#b00000;
+        font-size:16px;
+        margin-bottom:20px;
+        text-shadow:2px 2px 0 #300;
+    }
 
-.sidebar.min span.short{
-    display:inline;
-}
+    /* ===== GRID ===== */
+    .grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+        gap:18px;
+    }
 
-/* ===== ICONOS ===== */
-.icon{
-    width:28px;
-    height:28px;
-    stroke:#b00000;
-    fill:none;
-    stroke-width:2.5;
-}
+    /* ===== GAME CARD ===== */
+    .game{
+        background:#111;
+        border:3px solid #300;
+        box-shadow:4px 4px 0 #400;
+        padding:10px;
+        text-align:center;
+        color:#fff;
+        text-decoration:none;
+        transition:.1s;
+        position:relative;
+    }
 
-/* ===== MAIN ===== */
-.main{
-    margin-left:240px;
-    padding:20px;
-    background:#070707;
-    min-height:100vh;
-}
+    .game:hover{
+        transform:translate(2px,2px);
+        box-shadow:2px 2px 0 #400;
+        background:#180000;
+    }
 
-.sidebar.min + .main{
-    margin-left:80px;
-}
+    .game img{
+        width:100%;
+        height:120px;
+        object-fit:contain;
+        background:#000;
+        border:2px solid #400;
+        margin-bottom:8px;
+    }
 
-/* ===== GRID ===== */
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-    gap:18px;
-}
+    .game span{
+        font-size:10px;
+        display:block;
+    }
 
-/* ===== GAME CARD ===== */
-.game{
-    background:#0e0e0e;
-    padding:10px;
-    text-align:center;
-    position:relative;
-    color:#fff;
-    text-decoration:none;
-    border:3px solid #200;
-    box-shadow:4px 4px 0 #300;
-    transition:.1s;
-}
+    /* ===== BLOOD PIXEL ===== */
+    .blood{
+        position:fixed;
+        bottom:10px;
+        left:240px;
+        width:140px;
+        height:60px;
+        background:
+            radial-gradient(circle at 20% 50%, #700 30%, transparent 31%),
+            radial-gradient(circle at 40% 40%, #900 35%, transparent 36%),
+            radial-gradient(circle at 65% 55%, #600 30%, transparent 31%),
+            radial-gradient(circle at 85% 45%, #800 35%, transparent 36%);
+        pointer-events:none;
+        opacity:.9;
+    }
+    </style>
+</head>
 
-.game:hover{
-    transform:translate(2px,2px);
-    box-shadow:2px 2px 0 #300;
-    background:#160000;
-}
+<body>
 
-.game img{
-    width:100%;
-    height:140px;
-    object-fit:contain;
-    background:#000;
-    border:2px solid #400;
-}
+<!-- DECORACIÓN -->
+<div class="blood"></div>
 
-/* ===== FAVORITOS ===== */
-.star{
-    position:absolute;
-    top:6px;
-    right:6px;
-    font-size:18px;
-    color:#555;
-    cursor:pointer;
-}
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <h2>SISTEMAS</h2>
 
-.star.active{
-    color:#ffd700;
-    text-shadow:0 0 6px #ff0;
-}
+    <!-- EJEMPLOS (NO ROMPEN NADA) -->
+    <a href="?system=nes">NES</a>
+    <a href="?system=snes">SNES</a>
+    <a href="?system=gba">GBA</a>
+</div>
 
-/* ===== MODAL ===== */
-.modal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.85);
-    display:none;
-    align-items:center;
-    justify-content:center;
-}
+<!-- MAIN -->
+<div class="main">
+    <h1>PIXEL NIGHTMARE</h1>
 
-.modal-box{
-    background:#0b0b0b;
-    padding:20px;
-    border:4px solid #400;
-    width:300px;
-}
+    <div class="grid">
 
-.modal input{
-    width:100%;
-    padding:10px;
-    margin:8px 0;
-    background:#000;
-    color:#fff;
-    border:2px solid #400;
-    font-family:'Press Start 2P';
-}
+        <?php
+        // ⚠️ EJEMPLO DE LOOP
+        // Sustituye esto por TU loop real
+        $games = [
+            ["system"=>"nes","rom"=>"mario","name"=>"Mario Bros","img"=>"covers/mario.png"],
+            ["system"=>"snes","rom"=>"zelda","name"=>"Zelda","img"=>"covers/zelda.png"]
+        ];
 
-/* ===== SANGRE PIXEL ===== */
-.blood{
-    position:fixed;
-    bottom:10px;
-    left:20px;
-    width:140px;
-    height:60px;
-    background:
-        radial-gradient(circle at 20% 50%, #700 30%, transparent 31%),
-        radial-gradient(circle at 40% 40%, #900 35%, transparent 36%),
-        radial-gradient(circle at 65% 55%, #600 30%, transparent 31%),
-        radial-gradient(circle at 85% 45%, #800 35%, transparent 36%);
-    pointer-events:none;
-    opacity:.9;
-}
-</style>
+        foreach($games as $g):
+        ?>
+            <!-- ⚠️ ESTO ES CLAVE: NO CAMBIAR EL href -->
+            <a class="game"
+               href="play.php?system=<?=$g['system']?>&rom=<?=$g['rom']?>">
+
+                <img src="<?=$g['img']?>" alt="">
+                <span><?=$g['name']?></span>
+
+            </a>
+        <?php endforeach; ?>
+
+    </div>
+</div>
+
+</body>
+</html>
