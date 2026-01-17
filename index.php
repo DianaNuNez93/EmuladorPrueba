@@ -2,129 +2,272 @@
 session_start();
 
 /* =========================
-   TODO TU PHP ORIGINAL
-   (login, register, ajax,
-    favoritos, queries,
-    loops, etc)
+   CONEXIÓN DB
 ========================= */
+$DB_HOST = "sql103.infinityfree.com";
+$DB_USER = "if0_40909083";
+$DB_PASS = "l26odsVdk4PSgga";
+$DB_NAME = "if0_40909083_emutable";
+
+
+
+/* =========================
+   ACCIONES AJAX
+========================= */
+if(isset($_POST['action'])){
+
+    /* LOGIN */
+    if($_POST['action']==='login'){
+        $u=trim($_POST['username']);
+        $p=$_POST['password'];
+
+        $st=$conn->prepare("SELECT id,password FROM users WHERE username=?");
+        $st->bind_param("s",$u);
+        $st->execute();
+        $result=$st->get_result();
+        $row=$result->fetch_assoc();
+
+        if($row && password_verify($p,$row['password'])){
+            $id=$row['id'];
+            $_SESSION['user_id']=$id;
+            $_SESSION['username']=$u;
+            echo "OK";
+        }else echo "ERROR";
+        exit;
+    }
+
+    /* REGISTER */
+    if($_POST['action']==='register'){
+        $u=trim($_POST['username']);
+        $p=$_POST['password'];
+        if(strlen($p)<8){ echo "SHORT"; exit; }
+
+        $hash=password_hash($p,PASSWORD_DEFAULT);
+        $st=$conn->prepare("INSERT INTO users(username,password) VALUES(?,?)");
+        $st->bind_param("ss",$u,$hash);
+        echo $st->execute()?"OK":"EXISTS";
+        exit;
+    }
+
+    /* TOGGLE FAVORITO */
+    if($_POST['action']==='toggle_favorite'){
+        if(!isset($_SESSION['user_id'])){ echo "NO_LOGIN"; exit; }
+
+        $uid=$_SESSION['user_id'];
+        $system=$_POST['system'];
+        $rom=$_POST['rom'];
+
+        $st=$conn->prepare(
+            "SELECT id FROM favorites WHERE user_id=? AND system=? AND rom=?"
+        );
+        $st->bind_param("iss",$uid,$system,$rom);
+        $st->execute(); $st->store_result();
+
+        if($st->num_rows){
+            $del=$conn->prepare(
+                "DELETE FROM favorites WHERE user_id=? AND system=? AND rom=?"
+            );
+            $del->bind_param("iss",$uid,$system,$rom);
+            $del->execute();
+            echo "REMOVED";
+        }else{
+            $ins=$conn->prepare(
+                "INSERT INTO favorites(user_id,system,rom) VALUES(?,?,?)"
+            );
+            $ins->bind_param("iss",$uid,$system,$rom);
+            $ins->execute();
+            echo "ADDED";
+        }
+        exit;
+    }
+}
+
+/* =========================
+   FAVORITOS (FETCH)
+========================= */
+$userFavorites=[];
+if(isset($_SESSION['user_id'])){
+    $uid=$_SESSION['user_id'];
+    $res=$conn->query("SELECT system,rom FROM favorites WHERE user_id=$uid");
+    while($r=$res->fetch_assoc()){
+        $userFavorites[]=$r['system']."::".$r['rom'];
+    }
+}
+
+/* =========================
+   SISTEMAS
+========================= */
+$systems=[
+ "nes"=>["label"=>"NES","short"=>"NES","logo"=>"logo/nes.png"],
+ "snes"=>["label"=>"SNES","short"=>"SNES","logo"=>"logo/snes.png"],
+ "n64"=>["label"=>"Nintendo 64","short"=>"N64","logo"=>"logo/n64.png"],
+ "gba"=>["label"=>"Game Boy Advance","short"=>"GBA","logo"=>"logo/gba.png"],
+ "gb"=>["label"=>"Game Boy","short"=>"GB","logo"=>"logo/gb.png"],
+ "gbc"=>["label"=>"Game Boy Color","short"=>"GBC","logo"=>"logo/gbc.png"],
+ "psx"=>["label"=>"PlayStation","short"=>"PS1","logo"=>"logo/psx.png"],
+ "megadrive"=>["label"=>"Mega Drive","short"=>"MD","logo"=>"logo/megadrive.png"]
+];
+
+$currentSystem=$_GET['system']??null;
+$showFavorites=isset($_GET['favorites']);
+
+$roms=[];$popular=[];
+
+if($currentSystem && isset($systems[$currentSystem])){
+    $dir=__DIR__."/roms/$currentSystem";
+    if(is_dir($dir)){
+        foreach(scandir($dir) as $f){
+            if(preg_match('/\.(zip|iso|bin)$/i',$f)) $roms[]=$f;
+        }
+        sort($roms);
+    }
+}
+
+function cleanName($f){
+    return trim(preg_replace('/\s*[\(\[].*?[\)\]]/','',pathinfo($f,PATHINFO_FILENAME)));
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Arcade</title>
-
-<!-- =========================
-     ESTÉTICA PIXEL SPOOKY
-     (NO TOCA LÓGICA)
-========================= -->
-
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<title>System Beware Retro</title>
 
 <style>
-/* === RESET SEGURO === */
-*{
-    image-rendering: pixelated;
-}
+body{margin:0;background:#000;color:#fff;font-family:Arial;display:flex}
+.sidebar{width:240px;background:#0a0a0a;padding:16px;transition:.25s}
+.sidebar.min{width:80px}
+.sidebar a{color:#bbb;text-decoration:none;display:flex;gap:12px;margin:10px 0}
+.sidebar a:hover{color:#fff}
+.sidebar.min span.text{display:none}
+span.short{display:none}
+.sidebar.min span.short{display:inline}
 
-/* === BASE === */
-body{
-    background:#050505 !important;
-    color:#eaeaea !important;
-    font-family:'Press Start 2P', monospace !important;
-}
+.icon{width:28px;height:28px;stroke:#e53935;fill:none;stroke-width:2.5}
 
-/* === LINKS (NO ROMPE href) === */
-a{
-    color:#c00000;
-    text-decoration:none;
-}
+.main{flex:1;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:15px}
 
-a:hover{
-    color:#ff4444;
-}
+.game{background:#111;padding:10px;border-radius:6px;text-align:center;position:relative;color:#fff;text-decoration:none}
+.game img{width:100%;height:140px;object-fit:contain;background:#000}
+.star{position:absolute;top:8px;right:8px;font-size:18px;color:#777;cursor:pointer}
+.star.active{color:#ffd700;transform:scale(1.2)}
+.star:hover{transform:scale(1.3)}
 
-/* === CONTENEDORES === */
-div, section, main{
-    background-color: transparent;
-}
-
-/* === JUEGOS (SIN CLASES ESPECÍFICAS) === */
-a[href*="play.php"]{
-    display:block;
-    background:#0f0f0f;
-    border:3px solid #300;
-    box-shadow:4px 4px 0 #400;
-    padding:10px;
-    transition:.12s;
-}
-
-a[href*="play.php"]:hover{
-    background:#180000;
-    transform:translate(2px,2px);
-    box-shadow:2px 2px 0 #400;
-}
-
-/* === IMÁGENES === */
-img{
-    background:#000;
-    border:2px solid #400;
-}
-
-/* === TEXTO === */
-p, span, small, label{
-    color:#ddd;
-}
-
-/* === INPUTS / LOGIN === */
-input, select, button{
-    background:#000;
-    color:#fff;
-    border:2px solid #400;
-    font-family:'Press Start 2P', monospace;
-}
-
-button:hover{
-    background:#200000;
-}
-
-/* === TABLAS / LISTAS === */
-table, tr, td{
-    border-color:#400;
-    color:#eee;
-}
-
-/* === SANGRE PIXEL (DECORACIÓN SEGURA) === */
-body::after{
-    content:"";
-    position:fixed;
-    bottom:10px;
-    left:10px;
-    width:160px;
-    height:60px;
-    background:
-        radial-gradient(circle at 20% 50%, #700 30%, transparent 31%),
-        radial-gradient(circle at 45% 40%, #900 35%, transparent 36%),
-        radial-gradient(circle at 70% 55%, #600 30%, transparent 31%),
-        radial-gradient(circle at 90% 45%, #800 35%, transparent 36%);
-    pointer-events:none;
-    opacity:.85;
-    z-index:1;
-}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center}
+.modal-box{background:#111;padding:20px;border-radius:8px;width:280px}
+.modal input{width:100%;padding:8px;margin:6px 0}
 </style>
-
 </head>
 
 <body>
 
-<!-- =========================
-     AQUÍ SIGUE TU HTML + PHP
-     EXACTAMENTE IGUAL
-========================= -->
+<div class="sidebar" id="sidebar">
+<div onclick="toggleSidebar()" style="cursor:pointer;font-size:22px">☰</div>
 
-<?php
-/* TODO TU HTML DINÁMICO ORIGINAL */
-?>
+<a href="index.php">
+<svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+<span class="text">Inicio</span>
+</a>
+
+<a href="?favorites=1">
+<svg class="icon" viewBox="0 0 24 24"><path d="M12 3l3.1 6.3L22 10l-5 4.9L18.2 22 12 18.6 5.8 22 7 14.9 2 10l6.9-.7z"/></svg>
+<span class="text">Favoritos</span>
+</a>
+
+<hr>
+<?php foreach($systems as $k=>$s): ?>
+<a href="?system=<?=$k?>">
+<span class="text"><?=$s['label']?></span>
+<span class="short"><?=$s['short']?></span>
+</a>
+<?php endforeach ?>
+</div>
+
+<div class="main">
+
+<?php if($showFavorites): ?>
+<h2>⭐ Favoritos</h2>
+<div class="grid">
+<?php foreach($userFavorites as $f):
+    [$s,$r]=explode("::",$f); ?>
+<a class="game" href="play.php?system=<?=$s?>&rom=<?=urlencode($r)?>">
+<span class="star active" onclick="toggleFav(event,'<?=$s?>','<?=$r?>')">★</span>
+<img src="logos/<?=$s?>.png">
+<div><?=cleanName($r)?></div>
+</a>
+<?php endforeach ?>
+</div>
+
+<?php elseif($currentSystem): ?>
+<h2><?=$systems[$currentSystem]['label']?></h2>
+<div class="grid">
+<?php foreach($roms as $r):
+$id=$currentSystem."::".$r; ?>
+<a class="game" href="play.php?system=<?=$currentSystem?>&rom=<?=urlencode($r)?>">
+<span class="star <?=in_array($id,$userFavorites)?'active':''?>"
+onclick="toggleFav(event,'<?=$currentSystem?>','<?=$r?>')">★</span>
+<img src="<?=$systems[$currentSystem]['logo']?>">
+<div><?=cleanName($r)?></div>
+</a>
+<?php endforeach ?>
+</div>
+
+<?php else: ?>
+<h2>Selecciona una consola</h2>
+<div class="grid">
+<?php foreach($systems as $k=>$s): ?>
+<a class="game" href="?system=<?=$k?>">
+<img src="<?=$s['logo']?>">
+<div><?=$s['label']?></div>
+</a>
+<?php endforeach ?>
+</div>
+<?php endif ?>
+
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal" id="loginModal">
+<div class="modal-box">
+<h3>Login / Registro</h3>
+<input id="lu" placeholder="Usuario">
+<input id="lp" type="password" placeholder="Contraseña">
+<button onclick="login()">Login</button>
+<button onclick="register()">Registrar</button>
+</div>
+</div>
+
+<script>
+const logged=<?=isset($_SESSION['user_id'])?'true':'false'?>;
+
+function toggleSidebar(){
+ document.getElementById("sidebar").classList.toggle("min");
+}
+
+function toggleFav(e,s,r){
+ e.preventDefault();e.stopPropagation();
+ if(!logged){showLogin();return;}
+ fetch("index.php",{method:"POST",
+ headers:{'Content-Type':'application/x-www-form-urlencoded'},
+ body:`action=toggle_favorite&system=${s}&rom=${encodeURIComponent(r)}`})
+ .then(()=>location.reload());
+}
+
+function showLogin(){document.getElementById("loginModal").style.display="flex";}
+function login(){
+ fetch("index.php",{method:"POST",
+ headers:{'Content-Type':'application/x-www-form-urlencoded'},
+ body:`action=login&username=${lu.value}&password=${lp.value}`})
+ .then(r=>r.text()).then(t=>t==="OK"?location.reload():alert("Error"));
+}
+function register(){
+ fetch("index.php",{method:"POST",
+ headers:{'Content-Type':'application/x-www-form-urlencoded'},
+ body:`action=register&username=${lu.value}&password=${lp.value}`})
+ .then(r=>r.text()).then(t=>t==="OK"?alert("Registrado"):alert("Error"));
+}
+</script>
 
 </body>
 </html>
